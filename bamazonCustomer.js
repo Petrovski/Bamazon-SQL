@@ -1,5 +1,6 @@
 const mysql = require("mysql");
 const inquirer = require("inquirer");
+const Table = require("cli-table");
 
 var connection = mysql.createConnection({
     host: "localhost",
@@ -14,28 +15,118 @@ var connection = mysql.createConnection({
 
 connection.connect(function (err) {
     if (err) throw err;
-    console.log("connected as id " + connection.threadId);
-    afterConnection();
+    displayProducts();
 });
 
-function afterConnection() {
-    connection.query("SELECT * FROM products", function (err, data) {
-        if (err) throw err;
-        // console.log(data);
-        displayProducts();
-    });
-}
+var table = new Table({
+    head: ['ID', 'Product Name', 'Department', "Price"]
+    , colWidths: [5, 35, 35, 7]
+});
+
 
 function displayProducts() {
     connection.query("SELECT * FROM products", function (err, data) {
+        if (err) throw err;
+
+        console.log("---------------------------------------------------------------------------")
+        console.log("Welcome to our marketplace! Here are all of our products for sale!");
+        console.log("---------------------------------------------------------------------------")
+
         for (let i = 0; i < data.length; i++) {
-            console.log(
-                data[i].id + " | " +
-                data[i].product_name + " | " +
-                data[i].department_name + " | " +
-                data[i].price + " | " +
-                data[i].stock_quantity
-            )
+
+            table.push([data[i].id, data[i].product_name, data[i].department_name, "$" + data[i].price])
+
         }
+
+        console.log(table.toString());
+        selectItem();
     });
 }
+
+function selectItem() {
+
+    connection.query("SELECT * FROM products", function (err, data) {
+
+        if (err) throw err;
+        inquirer
+            .prompt([
+                {
+                    type: "input",
+                    message: "Select the ID for the item you would like to purchase!",
+                    name: "id_question",
+                    validate: function (input) {
+                        if (input < data.length + 1) {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    }
+                },
+                {
+                    type: "input",
+                    message: "Please indicate the amount of units you would like to purchase",
+                    name: "quantity_question",
+                    validate: function (units) {
+                        if (isNaN(units) === false) {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    }
+                },
+            ])
+            .then(function (inquirerResponse) {
+                console.log(inquirerResponse.id_question);
+                console.log(inquirerResponse.quantity_question);
+                // if (inquirerResponse.question === "BID ON AN ITEM") {
+                //     console.log("You decided to BID on an item! Select something to bid on")
+                // } else {
+                //     console.log("You decided to POST an item. What would you like to post?")
+                //     postMenu();
+                // }
+            });
+    });
+}
+    
+
+function postMenu() {
+    inquirer
+        .prompt([
+            {
+                type: "input",
+                message: "What would you like to sell?",
+                name: "auction"
+            },
+            {
+                type: "input",
+                message: "What is the starting bid of this item? (in dollars)",
+                name: "startingBid"
+            },
+        ])
+        .then(function (inquirerResponse) {
+            // console.log(inquirerResponse.auction);
+            // console.log(inquirerResponse.startingBid);
+            createAuction(inquirerResponse.auction, inquirerResponse.startingBid)
+            // if (inquirerResponse.question === "BID ON AN ITEM") {
+            //     console.log("You decided to BID on an item! Select something to bid on")
+            // } else {
+            //     console.log("You decided to POST an item. What would you like to post?")
+            // }
+        });
+}
+
+// function createAuction(auction, startingBid) {
+//     console.log("Creating a new item...\n");
+//     var query = connection.query(
+//         "INSERT INTO auctionItems SET ?",
+//         {
+//             auction: auction,
+//             current_bid: startingBid,
+//             current_bidder: "No Bids Yet!"
+//         },
+//         function (err, res) {
+//         }
+//     );
+//     // logs the actual query being run
+//     console.log(query.sql);
+// }
