@@ -54,8 +54,8 @@ function selectItem() {
                     type: "input",
                     message: "Select the ID for the item you would like to purchase!",
                     name: "id_question",
-                    validate: function (input) {
-                        if (input < data.length + 1) {
+                    validate: function (id) {
+                        if (id < data.length + 1) {
                             return true;
                         } else {
                             return false;
